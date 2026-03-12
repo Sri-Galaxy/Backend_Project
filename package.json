@@ -1,0 +1,12 @@
+{
+  "name": "backend_pro",
+  "version": "1.0.0",
+  "description": "A sample yet powerful backend project.",
+  "license": "ISC",
+  "author": "Srinath",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  }
+}
