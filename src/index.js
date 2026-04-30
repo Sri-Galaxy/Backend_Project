@@ -11,9 +11,9 @@ const port = process.env.PORT || 8088;
 connectDB()
 .then(() => {
     app.listen(port, () => {
-        console.log(`Server is running on port ${port}`);
+        console.log(`-- Server is running on port ${port} --`);
     });
 })
 .catch((err) => {
-    console.error("DB connection FAILED !!!", err);
+    console.error("-- DB connection FAILED !!! --", err);
 });
