@@ -23,8 +23,6 @@ const registerUserController = asyncWrap(async (req, res) => {
         throw new customError(409, 'User already exists');
     }
 
-    console.log(req.files);
-
     const avatarLocal = req.files?.avatar[0]?.path;
     const coverImageLocal = req.files?.coverImage[0]?.path;
 

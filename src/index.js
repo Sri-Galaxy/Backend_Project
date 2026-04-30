@@ -3,7 +3,7 @@ import connectDB from "./db/index.js";
 import app from "./app.js";
 
 dotenv.config(
-    { path: './env' }
+    { path: './.env' }
 );
 
 const port = process.env.PORT || 8088;
@@ -15,5 +15,5 @@ connectDB()
     });
 })
 .catch((err) => {
-    console.error("-- DB connection FAILED !!! --", err);
+    console.error("-- Server is NOT running !!! --", err);
 });
