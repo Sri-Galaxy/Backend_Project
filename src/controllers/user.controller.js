@@ -1,7 +1,23 @@
 import asyncWrap from '../utils/asyncWrap.js';
 import customError from '../utils/customError.js';
+import customResponse from '../utils/customResponse.js';
 import User from '../models/user.model.js';
 import uploadToCloud from "../utils/cloudinary.js";
+
+const generateTokens = async (user) => {
+    try {
+        const user = await User.findById(user._id);
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false });
+
+        return { accessToken, refreshToken };
+    } catch (error) {
+        throw new customError(500, 'Error generating tokens');
+    }
+};
 
 const registerUserController = asyncWrap(async (req, res) => {
     // Extract data from request body
@@ -60,4 +76,60 @@ const registerUserController = asyncWrap(async (req, res) => {
     });
 });
 
-export { registerUserController };
+const loginUserController = asyncWrap(async (req, res) => {
+    // req -> body
+    // check foremail or username
+    // check for password
+    // access token and refresh token
+    // send cookie
+
+    const { email, username, password } = req.body;
+
+    if (!email || !username) {
+        throw new customError(400, 'Email or username is required');
+    }
+    if (!password) {
+        throw new customError(400, 'Password is required');
+    }
+
+    const user = await User.find({ $or: [{ email }, { username }] });
+    if (!user) {
+        throw new customError(404, 'User not found');
+    }
+
+    const isPasswordValid = await user.comparePassword(password);
+
+    if (!isPasswordValid) {
+        throw new customError(401, 'Invalid User Credentials');
+    }
+
+    const { accessToken, refreshToken } = await generateTokens(user._id);
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    }
+
+    return res.status(200)
+    .cookie('refreshToken', refreshToken, cookieOptions)
+    .cookie('accessToken', accessToken, cookieOptions)
+    .json(new customResponse(200, 'User logged in successfully', 
+        {   
+            accessToken,
+            refreshToken,
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            fullname: user.fullname,
+            avatar: user.avatar,
+            coverImage: user.coverImage
+        }
+    ));
+});
+
+const logoutUserController = asyncWrap(async (req, res) => {
+    
+});
+
+export { registerUserController, loginUserController, logoutUserController };
