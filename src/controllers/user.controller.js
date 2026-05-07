@@ -129,7 +129,24 @@ const loginUserController = asyncWrap(async (req, res) => {
 });
 
 const logoutUserController = asyncWrap(async (req, res) => {
-    
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: { refreshToken: undefined }
+        },
+        {
+            new: true
+        }
+    )
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    }
+
+    return res.status(200).clearCookie('refreshToken', cookieOptions).clearCookie('accessToken', cookieOptions)
+    .json(new customResponse(200, 'User logged out successfully'));
 });
 
 export { registerUserController, loginUserController, logoutUserController };
