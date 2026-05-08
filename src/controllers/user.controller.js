@@ -3,21 +3,61 @@ import customError from '../utils/customError.js';
 import customResponse from '../utils/customResponse.js';
 import User from '../models/user.model.js';
 import uploadToCloud from "../utils/cloudinary.js";
+import jwt from 'jsonwebtoken';
 
 const generateTokens = async (user) => {
     try {
-        const user = await User.findById(user._id);
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
+        const person = await User.findById(user._id);
 
-        user.refreshToken = refreshToken;
-        await user.save({ validateBeforeSave: false });
+        const accessToken = person.generateAccessToken();
+        const refreshToken = person.generateRefreshToken();
+
+        person.refreshToken = refreshToken;
+        await person.save({ validateBeforeSave: false });
 
         return { accessToken, refreshToken };
     } catch (error) {
         throw new customError(500, 'Error generating tokens');
     }
 };
+
+const refreshAccessTokenController = asyncWrap(async (req, res) => {
+    const IncomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    if (!IncomingRefreshToken) {
+        throw new customError(401, 'Unauthorized request: No refresh token provided');
+    }
+
+    const decoded = await jwt.verify(IncomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    const person = await User.findById(decoded?.id);
+
+    if (!person) {
+        throw new customError(404, 'User not found');
+    }
+
+    if (person.refreshToken !== IncomingRefreshToken) {
+        throw new customError(401, 'Unauthorized request: Invalid refresh token');
+    }
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    }
+
+    const { accessToken, newRefreshToken } = await generateTokens(person);
+
+    return res.status(200)
+    .cookie('refreshToken', newRefreshToken, cookieOptions)
+    .cookie('accessToken', accessToken, cookieOptions)
+    .json(new customResponse(200, 'Access token refreshed successfully', 
+        {   
+            accessToken,
+            newRefreshToken
+        }
+    ));
+});
 
 const registerUserController = asyncWrap(async (req, res) => {
     // Extract data from request body
@@ -85,14 +125,14 @@ const loginUserController = asyncWrap(async (req, res) => {
 
     const { email, username, password } = req.body;
 
-    if (!email || !username) {
+    if (!(email || username)) {
         throw new customError(400, 'Email or username is required');
     }
     if (!password) {
         throw new customError(400, 'Password is required');
     }
 
-    const user = await User.find({ $or: [{ email }, { username }] });
+    const user = await User.findOne({ $or: [{ email }, { username }] });
     if (!user) {
         throw new customError(404, 'User not found');
     }
@@ -103,7 +143,7 @@ const loginUserController = asyncWrap(async (req, res) => {
         throw new customError(401, 'Invalid User Credentials');
     }
 
-    const { accessToken, refreshToken } = await generateTokens(user._id);
+    const { accessToken, refreshToken } = await generateTokens(user);
 
     const cookieOptions = {
         httpOnly: true,
@@ -149,4 +189,4 @@ const logoutUserController = asyncWrap(async (req, res) => {
     .json(new customResponse(200, 'User logged out successfully'));
 });
 
-export { registerUserController, loginUserController, logoutUserController };
+export { registerUserController, loginUserController, logoutUserController, refreshAccessTokenController };
