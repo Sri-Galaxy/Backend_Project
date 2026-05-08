@@ -46,7 +46,7 @@ const refreshAccessTokenController = asyncWrap(async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     }
 
-    const { accessToken, newRefreshToken } = await generateTokens(person);
+    const { accessToken, refreshToken: newRefreshToken } = await generateTokens(person);
 
     return res.status(200)
     .cookie('refreshToken', newRefreshToken, cookieOptions)
@@ -54,7 +54,7 @@ const refreshAccessTokenController = asyncWrap(async (req, res) => {
     .json(new customResponse(200, 'Access token refreshed successfully', 
         {   
             accessToken,
-            newRefreshToken
+            refreshToken: newRefreshToken
         }
     ));
 });
