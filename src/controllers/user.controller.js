@@ -189,4 +189,62 @@ const logoutUserController = asyncWrap(async (req, res) => {
     .json(new customResponse(200, 'User logged out successfully'));
 });
 
-export { registerUserController, loginUserController, logoutUserController, refreshAccessTokenController };
+const changePasswordController = asyncWrap(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+        throw new customError(400, 'Current password and new password are required');
+    }
+
+    const userId = req.user?._id;
+    const user = await User.findById(userId);
+
+    const isPasswordValid = await user.comparePassword(currentPassword);
+
+    if (!isPasswordValid) {
+        throw new customError(401, 'Invalid current password');
+    }
+
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json(new customResponse(200, 'Password changed successfully'));
+});
+
+const getCurrentUserController = asyncWrap(async (req, res) => {
+    return res.status(200).json(new customResponse(200, 'Current user retrieved successfully', req.user));
+});
+
+const updateAccountController = asyncWrap(async (req, res) => {
+    // Extract data from request body
+    // Perform validation (e.g., check if email is valid, etc.)
+    // Check if user exists in the database
+    const { fullName, email } = req.body;
+
+    if (!fullName && !email) {
+        throw new customError(400, 'At least one field (fullName or email) is required to update');
+    }
+
+    const userId = req.user?._id;
+
+    const user = await User.findByIdAndUpdate(
+        userId,
+        {
+            $set: { fullname, email}
+        },
+        {
+            new: true
+        }
+    ).select('-password -refreshToken');
+
+    return res.status(200).json(new customResponse(200, 'Account updated successfully', user));
+});
+
+export { registerUserController, 
+        loginUserController, 
+        logoutUserController, 
+        refreshAccessTokenController, 
+        changePasswordController,
+        getCurrentUserController, 
+        updateAccountController 
+    };
