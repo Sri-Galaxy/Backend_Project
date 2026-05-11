@@ -263,6 +263,12 @@ const updateAvatarController = asyncWrap(async (req, res) => {
         }
     ).select('-password -refreshToken');
 
+    //delete old avatar from cloudinary if exists
+    if (user.avatar) {
+        const publicId = user.avatar.split('/').pop().split('.')[0];
+        await uploadToCloud.delete(publicId);
+    }
+
     return res.status(200).json(new customResponse(200, 'Avatar updated successfully', user));
 });
 
@@ -288,6 +294,12 @@ const updateCoverImageController = asyncWrap(async (req, res) => {
             new: true
         }
     ).select('-password -refreshToken');
+
+    //delete old cover image from cloudinary if exists
+    if (user.coverImage) {
+        const publicId = user.coverImage.split('/').pop().split('.')[0];
+        await uploadToCloud.delete(publicId);
+    }
 
     return res.status(200).json(new customResponse(200, 'Cover image updated successfully', user));
 });
