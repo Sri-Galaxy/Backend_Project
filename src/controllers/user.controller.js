@@ -240,11 +240,66 @@ const updateAccountController = asyncWrap(async (req, res) => {
     return res.status(200).json(new customResponse(200, 'Account updated successfully', user));
 });
 
+const updateAvatarController = asyncWrap(async (req, res) => {
+    const avatarLocal = req.file?.path;
+
+    if (!avatarLocal) {
+        throw new customError(400, 'Avatar image is required');
+    }
+
+    const avatarFile = await uploadToCloud(avatarLocal);
+
+    if (!avatarFile || !avatarFile.url) {
+        throw new customError(500, 'Error uploading avatar image');
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: { avatar: avatarFile.url }
+        },
+        {
+            new: true
+        }
+    ).select('-password -refreshToken');
+
+    return res.status(200).json(new customResponse(200, 'Avatar updated successfully', user));
+});
+
+const updateCoverImageController = asyncWrap(async (req, res) => {
+    const coverImageLocal = req.file?.path;
+
+    if (!coverImageLocal) {
+        throw new customError(400, 'Cover image is required');
+    }
+
+    const coverImageFile = await uploadToCloud(coverImageLocal);
+
+    if (!coverImageFile || !coverImageFile.url) {
+        throw new customError(500, 'Error uploading cover image');
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: { coverImage: coverImageFile.url }
+        },
+        {
+            new: true
+        }
+    ).select('-password -refreshToken');
+
+    return res.status(200).json(new customResponse(200, 'Cover image updated successfully', user));
+});
+
+
 export { registerUserController, 
         loginUserController, 
         logoutUserController, 
         refreshAccessTokenController, 
         changePasswordController,
         getCurrentUserController, 
-        updateAccountController 
+        updateAccountController,
+        updateAvatarController,
+        updateCoverImageController
     };
