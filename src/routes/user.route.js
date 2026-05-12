@@ -44,4 +44,5 @@ userRouter.route("/channel/:username").get(verifyJWT, getAccountProfileControlle
 
 userRouter.route("/delete").delete(verifyJWT, deleteAccountController);
 
+
 export default userRouter;
