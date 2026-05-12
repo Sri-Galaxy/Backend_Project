@@ -304,6 +304,82 @@ const updateCoverImageController = asyncWrap(async (req, res) => {
     return res.status(200).json(new customResponse(200, 'Cover image updated successfully', user));
 });
 
+const deleteAccountController = asyncWrap(async (req, res) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new customError(400, 'User ID is required');
+    }
+
+    await User.findByIdAndDelete(userId);
+
+    return res.status(200).json(new customResponse(200, 'Account deleted successfully'));
+});
+
+const getAccountProfileController = asyncWrap(async (req, res) => {
+    const { username } = req.params;
+
+    if (!username?.trim()) {
+        throw new customError(400, 'Username is required');
+    }
+
+    const channelProfile = await User.aggregate([
+        {
+            $match: { 
+                username: username?.toLowerCase() 
+            } 
+        },
+        {
+            $lookup: {
+                from: 'subscriptions',
+                localField: '_id',
+                foreignField: 'channel',
+                as: 'subscribers'
+            }
+        },
+        {
+            $lookup: {
+                from: 'subscriptions',
+                localField: '_id',
+                foreignField: 'subscriber',
+                as: 'subscribedTo'
+            }
+        },
+        {
+            $addFields: {
+                subscribersCount: { $size: '$subscribers' },
+                subscribedToCount: { $size: '$subscribedTo' },
+                isSubscribed: {
+                    $cond: {
+                        if: { $in: [req.user?._id, '$subscribers.subscriber'] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                fullname: 1,
+                username: 1,
+                subscribersCount: 1,
+                subscribedToCount: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1
+            }
+        }
+    ]);
+
+    if (!channelProfile || channelProfile.length === 0) {  // or you can use - if (!channelProfile?.length == 0)
+        throw new customError(404, 'User not found');
+    }
+
+    return res
+    .status(200)
+    .json(new customResponse(200, 'Account profile retrieved successfully', channelProfile[0]));
+}); 
+
 
 export { registerUserController, 
         loginUserController, 
@@ -313,5 +389,6 @@ export { registerUserController,
         getCurrentUserController, 
         updateAccountController,
         updateAvatarController,
-        updateCoverImageController
+        updateCoverImageController,
+        deleteAccountController
     };
