@@ -390,5 +390,6 @@ export { registerUserController,
         updateAccountController,
         updateAvatarController,
         updateCoverImageController,
-        deleteAccountController
+        deleteAccountController,
+        getAccountProfileController
     };
