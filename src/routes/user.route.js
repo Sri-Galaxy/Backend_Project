@@ -9,7 +9,8 @@ import { loginUserController,
     updateAvatarController,
     updateCoverImageController,
     getAccountProfileController,
-    deleteAccountController
+    deleteAccountController,
+    getWatchHistoryController
 } from "../controllers/user.controller.js";
 import upload from "../middlewares/multer.middleware.js";
 import verifyJWT from "../middlewares/auth.middleware.js";
@@ -43,6 +44,8 @@ userRouter.route("/coverImage").patch(verifyJWT, upload.single("coverImage"), up
 userRouter.route("/channel/:username").get(verifyJWT, getAccountProfileController);
 
 userRouter.route("/delete").delete(verifyJWT, deleteAccountController);
+
+userRouter.route("/watchHistory").get(verifyJWT, getWatchHistoryController);
 
 
 export default userRouter;
