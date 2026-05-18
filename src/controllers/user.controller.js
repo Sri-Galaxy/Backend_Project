@@ -118,7 +118,7 @@ const registerUserController = asyncWrap(async (req, res) => {
 
 const loginUserController = asyncWrap(async (req, res) => {
     // req -> body
-    // check foremail or username
+    // check for email or username
     // check for password
     // access token and refresh token
     // send cookie
