@@ -380,6 +380,50 @@ const getAccountProfileController = asyncWrap(async (req, res) => {
     .json(new customResponse(200, 'Account profile retrieved successfully', channelProfile[0]));
 }); 
 
+const getWatchHistoryController = asyncWrap(async (req, res) => {
+    const userId = req.user?._id;
+
+    const user = await User.aggregate([
+        {
+            $match: { _id: new mongoose.Types.ObjectId(userId) }
+        },
+        {
+            $lookup: {
+                from: 'videos',
+                localField: 'watchHistory',
+                foreignField: '_id',
+                as: 'watchHistory',
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'owner',
+                            foreignField: '_id',
+                            as: 'owner',
+                            pipeline: [
+                                {
+                                    $project: {
+                                        username: 1,
+                                        avatar: 1,
+                                        fullname: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            owner: { $arrayElemAt: ['$owner', 0] }
+                        }
+                    }
+                ]
+            }
+        }
+    ]);
+
+    return res.status(200).json(new customResponse(200, 'Watch history retrieved successfully', user[0].watchHistory));
+}); 
+
 
 export { registerUserController, 
         loginUserController, 
@@ -391,5 +435,6 @@ export { registerUserController,
         updateAvatarController,
         updateCoverImageController,
         deleteAccountController,
-        getAccountProfileController
+        getAccountProfileController,
+        getWatchHistoryController
     };
